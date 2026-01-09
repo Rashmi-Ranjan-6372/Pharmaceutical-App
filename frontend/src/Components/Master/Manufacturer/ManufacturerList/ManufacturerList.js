@@ -1,172 +1,148 @@
-// src/Components/Master/Manufacturer/ManufacturerList/ManufacturerList.js
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Box, Text, Flex, Button, useToast } from "@chakra-ui/react";
 import { AddIcon } from "@chakra-ui/icons";
 
-import ManufacturerSearchbar from "./ManufacturerSearchbar"; // ✅ Corrected
+import ManufacturerSearchbar from "./ManufacturerSearchbar";
 import ManufacturerFilter from "./ManufacturerFilter";
 import ManufacturerTable from "./ManufacturerTable";
+import ManufacturerModal from "./ManufacturerModal";
 
-import {
-    listContainer,
-    listTopText,
-    addButtonStyle
-} from "./Style";
+import { getManufacturers, deleteManufacturer } from "../../../../api/manufacturerApi";
 
-// ---------------- Dummy Data ----------------
-const initialManufacturers = [
-    {
-        id: 1,
-        gl_code: "#M-101",
-        company: "Healthcare Pharma",
-        abbreviation: "HCP",
-        crName: "John Smith",
-        crPhone: "+1 416-555-0199",
-        city: "Toronto",
-        state: "Ontario",
-        country: "Canada",
-        status: "Active"
-    },
-    {
-        id: 2,
-        gl_code: "#M-102",
-        company: "Sun Pharma",
-        abbreviation: "SP",
-        crName: "Amit Kumar",
-        crPhone: "+91 9876543210",
-        city: "Mumbai",
-        state: "Maharashtra",
-        country: "India",
-        status: "Inactive"
-    },
-    {
-        id: 3,
-        gl_code: "#M-103",
-        company: "Pfizer",
-        abbreviation: "PFZ",
-        crName: "Emily Davis",
-        crPhone: "+44 20 7946 0958",
-        city: "London",
-        state: "England",
-        country: "UK",
-        status: "Active"
-    },
-    {
-        id: 4,
-        gl_code: "#M-104",
-        company: "Cipla",
-        abbreviation: "CPL",
-        crName: "Rahul Mehta",
-        crPhone: "+91 9811122233",
-        city: "Delhi",
-        state: "Delhi",
-        country: "India",
-        status: "Active"
-    }
-];
+import { listContainer, listTopText, addButtonStyle } from "./Style";
 
-// ---------------- Main Component ----------------
 const ManufacturerList = () => {
-    const toast = useToast();
+  const toast = useToast();
 
-    const [manufacturers, setManufacturers] = useState(initialManufacturers);
-    const [searchQuery, setSearchQuery] = useState("");
-    const [selected, setSelected] = useState([]);
-    const [filter, setFilter] = useState({
-        status: "",
-        city: "",
-        state: "",
-        country: "",
-        sort: "A-Z"
-    });
+  const [manufacturers, setManufacturers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filter, setFilter] = useState({ status: "", sort: "A-Z" });
 
-    // ✅ Delete Manufacturer
-    const handleDelete = (id) => {
-        setManufacturers((prev) => prev.filter((m) => m.id !== id));
-        setSelected((prev) => prev.filter((sid) => sid !== id));
-        toast({
-            title: "Manufacturer Deleted",
-            description: "Manufacturer removed successfully",
-            status: "success",
-            duration: 2000,
-            isClosable: true
-        });
-    };
+  // Modal state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState("view"); // view | edit
+  const [selectedManufacturer, setSelectedManufacturer] = useState(null);
 
-    // ✅ Filter + Search logic
-    let filteredManufacturers = [...manufacturers];
-
-    // Search filter
-    if (searchQuery) {
-        const q = searchQuery.toLowerCase();
-        filteredManufacturers = filteredManufacturers.filter(
-            (m) =>
-                m.company.toLowerCase().includes(q) ||
-                m.crName.toLowerCase().includes(q)
-        );
+  const fetchManufacturers = async () => {
+    try {
+      setLoading(true);
+      const res = await getManufacturers();
+      setManufacturers(res.data);
+    } catch {
+      toast({
+        title: "Failed to load manufacturers",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setLoading(false);
     }
+  };
 
-    // Dropdown filters
-    if (filter.status) {
-        filteredManufacturers = filteredManufacturers.filter(
-            (m) => m.status === filter.status
-        );
-    }
-    if (filter.city) {
-        filteredManufacturers = filteredManufacturers.filter(
-            (m) => m.city === filter.city
-        );
-    }
-    if (filter.state) {
-        filteredManufacturers = filteredManufacturers.filter(
-            (m) => m.state === filter.state
-        );
-    }
-    if (filter.country) {
-        filteredManufacturers = filteredManufacturers.filter(
-            (m) => m.country === filter.country
-        );
-    }
+  useEffect(() => {
+    fetchManufacturers();
+  }, []);
 
-    // Sort by company name A-Z or Z-A
-    filteredManufacturers.sort((a, b) =>
-        filter.sort === "A-Z"
-            ? a.company.localeCompare(b.company)
-            : b.company.localeCompare(a.company)
+  const handleView = (manufacturer) => {
+    setSelectedManufacturer(manufacturer);
+    setModalMode("view");
+    setIsModalOpen(true);
+  };
+
+  const handleEdit = (manufacturer) => {
+    setSelectedManufacturer(manufacturer);
+    setModalMode("edit");
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedManufacturer(null);
+  };
+
+  const handleDelete = async (mfg_code) => {
+    if (!window.confirm("Delete this manufacturer?")) return;
+
+    try {
+      await deleteManufacturer(mfg_code);
+      toast({
+        title: "Deleted successfully",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+      fetchManufacturers();
+    } catch {
+      toast({
+        title: "Delete failed",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
+
+  // ---------------- FILTERING LOGIC ----------------
+  let filtered = [...manufacturers];
+
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    filtered = filtered.filter(
+      (m) =>
+        m.mfg_name?.toLowerCase().includes(q) ||
+        m.mr_name?.toLowerCase().includes(q)
     );
+  }
 
-    return (
-        <Box {...listContainer}>
-            <Text {...listTopText}>
-                You have total <b>{manufacturers.length} Manufacturer(s)</b> for Pharmacy.
-            </Text>
+  if (filter.status !== "") {
+    filtered = filtered.filter((m) => String(m.is_active) === filter.status);
+  }
 
-            {/* Toolbar + Filters */}
-            <Flex mb={3} align="center" justify="space-between">
-                <Flex gap={3} flex="1">
-                    <ManufacturerSearchbar
-                        searchQuery={searchQuery}
-                        setSearchQuery={setSearchQuery}
-                    />
-                    <ManufacturerFilter filter={filter} setFilter={setFilter} />
-                </Flex>
-                <Button
-                    {...addButtonStyle}
-                    leftIcon={<AddIcon boxSize={3} />}
-                >
-                    Add Manufacturer
-                </Button>
-            </Flex>
+  filtered.sort((a, b) =>
+    filter.sort === "A-Z"
+      ? a.mfg_name.localeCompare(b.mfg_name)
+      : b.mfg_name.localeCompare(a.mfg_name)
+  );
 
-            {/* Data Table */}
-            <ManufacturerTable
-                manufacturers={filteredManufacturers}
-                selected={selected}
-                setSelected={setSelected}
-                onDelete={handleDelete}
-            />
-        </Box>
-    );
+  return (
+    <Box {...listContainer}>
+      <Text {...listTopText}>
+        You have total <b>{manufacturers.length}</b> Manufacturer(s)
+      </Text>
+
+      <Flex mb={3} justify="space-between" align="center">
+        <Flex gap={3}>
+          <ManufacturerSearchbar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+          <ManufacturerFilter filter={filter} setFilter={setFilter} />
+        </Flex>
+
+        {/* Add Manufacturer button opens separate form/page */}
+        <Button {...addButtonStyle} leftIcon={<AddIcon boxSize={3} />}>
+          Add Manufacturer
+        </Button>
+      </Flex>
+
+      <ManufacturerTable
+        manufacturers={filtered}
+        searchQuery={searchQuery}
+        isLoading={loading}
+        onView={handleView}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+      />
+
+      {/* Modal for view/edit only */}
+      <ManufacturerModal
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        mode={modalMode}
+        manufacturer={selectedManufacturer}
+        onSuccess={fetchManufacturers}
+      />
+    </Box>
+  );
 };
 
 export default ManufacturerList;
