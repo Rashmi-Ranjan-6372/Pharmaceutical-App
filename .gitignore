@@ -1,0 +1,64 @@
+# -------------------------
+# Node / React Frontend
+# -------------------------
+frontend/node_modules/
+frontend/build/
+frontend/.env
+frontend/.env.local
+frontend/.cache/
+frontend/dist/
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/.pnp
+frontend/.pnp.js
+
+# -------------------------
+# Python / Django Backend
+# -------------------------
+backend/venv/
+backend/env/
+backend/.env
+backend/*.pyc
+backend/*.pyo
+backend/*.pyd
+backend/__pycache__/
+backend/**/__pycache__/
+backend/db.sqlite3
+backend/media/
+backend/staticfiles/
+
+# Django related
+*.log
+*.pot
+*.pyc
+*.mo
+*.sqlite3
+*.sqlite3-journal
+
+# -------------------------
+# IDE and OS
+# -------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# -------------------------
+# Git
+# -------------------------
+*.orig
+
+# -------------------------
+# Windows extra
+# -------------------------
+ehthumbs.db
+desktop.ini
+
+# -------------------------
+# Python packaging
+# -------------------------
+*.egg-info/
+.eggs/
